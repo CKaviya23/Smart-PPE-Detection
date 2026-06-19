@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Safety PPE System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090c;--panel:#0d1117;--panel2:#111820;
+  --border:#1a2230;--border2:#243040;
+  --yellow:#f0c040;--cyan:#00d4ff;--green:#00e676;
+  --red:#ff3d3d;--orange:#ff8c00;
+  --text:#c8d8e8;--muted:#4a6070;
+  --font:'Barlow Condensed',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;}
+
+header{
+  height:52px;background:var(--panel);border-bottom:2px solid var(--yellow);
+  display:flex;align-items:center;padding:0 20px;gap:14px;position:relative;z-index:10;
+}
+.hlogo{
+  width:32px;height:32px;flex-shrink:0;background:var(--yellow);
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  display:grid;place-items:center;font-size:14px;color:#000;font-weight:900;
+}
+.htitle{font-size:20px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#fff;}
+.htitle span{color:var(--yellow);}
+.hright{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.hbadge{font-family:var(--mono);font-size:11px;color:var(--cyan);
+        background:#0a1520;border:1px solid var(--border2);border-radius:3px;padding:3px 10px;}
+#hclock{min-width:70px;text-align:right;}
+
+.wrap{display:flex;height:calc(100vh - 52px);}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:250px;flex-shrink:0;background:var(--panel);
+  border-right:1px solid var(--border);overflow-y:auto;
+  display:flex;flex-direction:column;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
+}
+.sb-sec{padding:12px 12px 8px;}
+.sb-title{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);
+  margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+.sb-title::before{content:'';width:3px;height:3px;border-radius:50%;background:var(--yellow);display:block;}
+
+/* Task buttons - single select */
+.tbtn{
+  width:100%;padding:9px 12px;margin-bottom:5px;
+  background:var(--panel2);border:1px solid var(--border);border-radius:5px;
+  color:var(--text);font-family:var(--font);font-size:13px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;
+  text-align:left;display:flex;align-items:center;gap:9px;transition:all .15s;
+}
+.tbtn:hover{background:#161f2c;border-color:var(--border2);}
+.tbtn.active{background:rgba(240,192,64,.08);border-color:var(--yellow);
+             color:var(--yellow);box-shadow:0 0 14px rgba(240,192,64,.15);}
+.tbtn .ti{font-size:17px;flex-shrink:0;}
+
+/* PPE buttons - MULTI select */
+.ppe-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;}
+.pbtn{
+  padding:8px 4px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:4px;color:var(--text);font-family:var(--font);font-size:11px;
+  font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  cursor:pointer;text-align:center;transition:all .15s;position:relative;
+}
+.pbtn:hover{background:#161f2c;}
+.pbtn.active{
+  background:rgba(0,212,255,.08);border-color:var(--cyan);
+  color:var(--cyan);box-shadow:0 0 10px rgba(0,212,255,.15);
+}
+.pbtn .chk{
+  position:absolute;top:3px;right:4px;font-size:9px;
+  color:var(--cyan);display:none;
+}
+.pbtn.active .chk{display:block;}
+
+.ppe-actions{display:flex;gap:5px;margin-bottom:4px;}
+.ppe-action-btn{
+  flex:1;padding:5px;background:var(--panel2);border:1px solid var(--border2);
+  border-radius:3px;color:var(--muted);font-family:var(--font);font-size:10px;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:.15s;
+}
+.ppe-action-btn:hover{color:var(--text);border-color:var(--muted);}
+
+.ppe-hint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px;}
+.ppe-selected{
+  font-family:var(--mono);font-size:10px;color:var(--cyan);
+  margin-top:5px;min-height:16px;
+}
+
+/* Input mode */
+.mode-wrap{padding:0 12px 12px;}
+.tabs{display:flex;gap:4px;margin-bottom:10px;}
+.tab{
+  flex:1;padding:6px 0;text-align:center;background:var(--panel2);
+  border:1px solid var(--border);border-radius:3px;font-family:var(--font);
+  font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);cursor:pointer;transition:.15s;
+}
+.tab:hover{color:var(--text);}
+.tab.active{background:rgba(0,212,255,.06);border-color:var(--cyan);color:var(--cyan);}
+.mode-panel{display:none;}
+.mode-panel.show{display:block;}
+
+.dropzone{
+  border:2px dashed var(--border2);border-radius:6px;padding:14px 10px;
+  text-align:center;cursor:pointer;transition:border-color .2s;background:var(--panel2);
+}
+.dropzone:hover{border-color:var(--cyan);}
+.dropzone input{display:none;}
+.dz-icon{font-size:22px;margin-bottom:4px;}
+.dz-text{font-size:11px;color:var(--muted);}
+.dz-name{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:5px;word-break:break-all;}
+
+.run-btn{
+  width:100%;margin-top:8px;padding:10px;background:var(--yellow);border:none;
+  border-radius:5px;color:#000;font-family:var(--font);font-weight:800;
+  font-size:13px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;
+}
+.run-btn:hover{opacity:.85;}
+.run-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+.cam-btns{display:flex;gap:6px;margin-top:8px;}
+.cam-start,.cam-stop{
+  flex:1;padding:9px;border:none;border-radius:5px;font-family:var(--font);
+  font-weight:800;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:.15s;
+}
+.cam-start{background:var(--green);color:#000;}
+.cam-start:hover{opacity:.85;}
+.cam-stop{background:var(--red);color:#fff;}
+.cam-stop:hover{opacity:.85;}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+.tbar{
+  height:40px;background:var(--panel2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;
+}
+.tbar-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.tbar-name{font-size:16px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--yellow);}
+.tbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s;}
+.sdot.live{background:var(--green);box-shadow:0 0 6px var(--green);}
+.sdot.proc{background:var(--orange);box-shadow:0 0 6px var(--orange);}
+#stext{font-family:var(--mono);font-size:10px;color:var(--muted);}
+
+/* Model info badge */
+.model-badge{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  background:var(--panel2);border:1px solid var(--border);
+  border-radius:3px;padding:2px 8px;margin-left:8px;
+}
+
+.display{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at center,#0d1520 0%,var(--bg) 100%);
+}
+.display::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(26,34,48,.6) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(26,34,48,.6) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+.display::after{content:'';position:absolute;inset:16px;pointer-events:none;
+               border:1px solid rgba(240,192,64,.08);border-radius:2px;}
+
+.dbox{position:relative;z-index:1;width:100%;max-width:960px;
+      display:flex;align-items:center;justify-content:center;padding:10px;}
+
+.placeholder{text-align:center;color:var(--muted);}
+.ph-icon{font-size:56px;opacity:.25;display:block;margin-bottom:12px;}
+.ph-text{font-size:13px;letter-spacing:1px;line-height:1.8;}
+
+.spinner-wrap{display:none;flex-direction:column;align-items:center;gap:12px;color:var(--yellow);}
+.spinner{width:42px;height:42px;border:3px solid var(--border2);
+         border-top-color:var(--yellow);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-text{font-family:var(--mono);font-size:11px;letter-spacing:1px;}
+
+#img-photo,#img-video,#img-webcam{
+  max-width:100%;max-height:calc(100vh - 140px);border-radius:4px;display:none;
+}
+#img-photo,#img-video{border:1px solid var(--border2);}
+#img-webcam{border:1px solid var(--cyan);box-shadow:0 0 20px rgba(0,212,255,.1);}
+
+.rbar{
+  flex-shrink:0;min-height:38px;background:var(--panel);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:8px;flex-wrap:wrap;
+}
+.rbar-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);flex-shrink:0;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:2px;
+      border:1px solid var(--border2);color:var(--text);}
+.chip.ok{border-color:var(--green);color:var(--green);}
+.chip.bad{border-color:var(--red);color:var(--red);}
+.chip.info{border-color:var(--cyan);color:var(--cyan);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hlogo">⚠</div>
+  <div class="htitle">Safety <span>PPE</span> Detection</div>
+  <div class="hright">
+    <div class="hbadge">YOLOv8 PPE MODEL</div>
+    <div class="hbadge">SYSTEM ONLINE</div>
+    <div class="hbadge" id="hclock"></div>
+    <a href="/analytics" style="padding:4px 14px;border-radius:4px;border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;white-space:nowrap;">📊 ANALYTICS</a>
+  </div>
+</header>
+
+<div class="wrap">
+<aside class="sidebar">
+
+  <!-- Detection Tasks -->
+  <div class="sb-sec">
+    <div class="sb-title">Detection Tasks</div>
+    <button class="tbtn" data-task="person"   onclick="setTask(this)"><span class="ti">🧍</span>Person + ID</button>
+    <button class="tbtn active" data-task="ppe" onclick="setTask(this)"><span class="ti">🦺</span>PPE Detection</button>
+    <button class="tbtn" data-task="tripwire" onclick="setTask(this)"><span class="ti">⛔</span>Tripwire</button>
+    <button class="tbtn" data-task="tamper"   onclick="setTask(this)"><span class="ti">📷</span>Cam Tampering</button>
+  </div>
+
+  <!-- PPE Multi-select -->
+  <div class="sb-sec">
+    <div class="sb-title">PPE Equipment <span style="color:var(--cyan);margin-left:4px;">(multi-select)</span></div>
+
+    <div class="ppe-actions">
+      <button class="ppe-action-btn" onclick="selectAllPPE()">SELECT ALL</button>
+      <button class="ppe-action-btn" onclick="clearAllPPE()">CLEAR</button>
+    </div>
+
+    <div class="ppe-grid">
+      <button class="pbtn active" data-ppe="all"     onclick="togglePPE(this)">🦺 All PPE<span class="chk">✓</span></button>
+      <button class="pbtn"        data-ppe="helmet"  onclick="togglePPE(this)">⛑ Helmet<span class="chk">✓</span></button>
+      <button class="pbtn"        data-ppe="glasses" onclick="togglePPE(this)">🥽 Glasses<span class="chk">✓</span></button>
+      <button class="pbtn"        data-ppe="gloves"  onclick="togglePPE(this)">🧤 Gloves<span class="chk">✓</span></button>
+      <button class="pbtn"        data-ppe="mask"    onclick="togglePPE(this)">😷 Mask<span class="chk">✓</span></button>
+      <button class="pbtn"        data-ppe="boots"   onclick="togglePPE(this)">👢 Boots<span class="chk">✓</span></button>
+    </div>
+
+    <div class="ppe-selected" id="ppe-selected-label">Selected: ALL</div>
+    <div class="ppe-hint">Click multiple items to detect only those. "All PPE" detects everything.</div>
+  </div>
+
+  <!-- Input Source -->
+  <div class="sb-sec">
+    <div class="sb-title">Input Source</div>
+  </div>
+  <div class="mode-wrap">
+    <div class="tabs">
+      <div class="tab active" onclick="setMode('photo',this)">PHOTO</div>
+      <div class="tab"        onclick="setMode('video',this)">VIDEO</div>
+      <div class="tab"        onclick="setMode('webcam',this)">WEBCAM</div>
+    </div>
+
+    <div class="mode-panel show" id="mp-photo">
+      <div class="dropzone" onclick="document.getElementById('inp-photo').click()">
+        <div class="dz-icon">🖼</div>
+        <div class="dz-text">Click or drop image here</div>
+        <input type="file" id="inp-photo" accept="image/*" onchange="onFile(this,'photo')"/>
+        <div class="dz-name" id="fn-photo"></div>
+      </div>
+      <button class="run-btn" id="btn-photo" onclick="runPhoto()" disabled>▶ RUN DETECTION</button>
+    </div>
+
+    <div class="mode-panel" id="mp-video">
+      <div class="dropzone" onclick="document.getElementById('inp-video').click()">
+        <div class="dz-icon">🎬</div>
+        <div class="dz-text">Click or drop video here</div>
+        <input type="file" id="inp-video" accept="video/*" onchange="onFile(this,'video')"/>
+        <div class="dz-name" id="fn-video"></div>
+      </div>
+      <button class="run-btn" id="btn-video" onclick="runVideo()" disabled>▶ RUN DETECTION</button>
+    </div>
+
+    <div class="mode-panel" id="mp-webcam">
+      <p style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
+        Live webcam stream with real-time detection.
+      </p>
+      <div class="cam-btns">
+        <button class="cam-start" onclick="camStart()">▶ START</button>
+        <button class="cam-stop"  onclick="camStop()">■ STOP</button>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<main class="main">
+  <div class="tbar">
+    <span class="tbar-label">Active:</span>
+    <span class="tbar-name" id="tbar-name">PPE Detection</span>
+    <div class="tbar-right">
+      <span id="stext">IDLE</span>
+      <span class="sdot" id="sdot"></span>
+    </div>
+  </div>
+
+  <!-- Zone Drawing Canvas (shown only in tripwire mode) -->
+  <div id="zone-canvas-wrap" style="display:none;position:relative;">
+    <canvas id="zone-canvas" style="position:absolute;top:0;left:0;cursor:crosshair;z-index:10;"></canvas>
+  </div>
+
+  <div class="display" id="display-area">
+    <div class="dbox">
+      <div class="placeholder" id="placeholder">
+        <span class="ph-icon">🔍</span>
+        <div class="ph-text">Select task · Choose input · Run detection</div>
+      </div>
+      <div class="spinner-wrap" id="spinner">
+        <div class="spinner"></div>
+        <div class="spin-text">PROCESSING…</div>
+      </div>
+      <img id="img-photo"  alt="photo result"/>
+      <img id="img-video"  alt="video stream"/>
+      <img id="img-webcam" alt="webcam stream"/>
+    </div>
+  </div>
+
+
+  <!-- Zone Drawing Toolbar -->
+  <div id="zone-toolbar" style="display:none;background:#0a1520;border-top:2px solid var(--cyan);padding:10px 16px;flex-shrink:0;flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-family:var(--mono);font-size:11px;color:var(--cyan);font-weight:600;">⬡ ZONE DRAW MODE</span>
+    <span style="font-size:11px;color:var(--muted);">👆 Click on video/image to add points (min 3)</span>
+    <button onclick="confirmZone()" style="padding:6px 16px;background:var(--green);border:none;border-radius:4px;color:#000;font-family:var(--font);font-weight:800;font-size:13px;cursor:pointer;letter-spacing:1px;">✓ CONFIRM ZONE</button>
+    <button onclick="clearZone()" style="padding:6px 16px;background:var(--red);border:none;border-radius:4px;color:#fff;font-family:var(--font);font-weight:800;font-size:13px;cursor:pointer;letter-spacing:1px;">✕ CLEAR</button>
+    <span id="zone-pts-label" style="font-family:var(--mono);font-size:11px;color:var(--yellow);">Points: 0</span>
+  </div>
+
+  <div class="rbar">
+    <span class="rbar-label">Results</span>
+    <div class="chips" id="chips"></div>
+  </div>
+</main>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────
+let activeTask    = "ppe";
+let selectedPPE   = new Set(["all"]);   // multi-select set
+let activeMode    = "photo";
+let photoFile     = null;
+let videoFile     = null;
+let camRunning    = false;
+
+// ── Clock ──────────────────────────────────────
+(function tick(){
+  document.getElementById("hclock").textContent =
+    new Date().toLocaleTimeString("en-GB",{hour12:false});
+  setTimeout(tick,1000);
+})();
+
+// setTask moved to zone drawing section below
+
+// ── PPE Multi-select ───────────────────────────
+function togglePPE(btn){
+  const ppe = btn.dataset.ppe;
+
+  if(ppe === "all"){
+    // "All" toggles: if already selected → deselect; else select only "all"
+    if(selectedPPE.has("all")){
+      selectedPPE.clear();
+    } else {
+      selectedPPE.clear();
+      selectedPPE.add("all");
+    }
+  } else {
+    // Specific item: toggle it, remove "all" when selecting specific
+    selectedPPE.delete("all");
+    if(selectedPPE.has(ppe)){
+      selectedPPE.delete(ppe);
+      if(selectedPPE.size === 0) selectedPPE.add("all"); // if nothing left, go back to all
+    } else {
+      selectedPPE.add(ppe);
+    }
+  }
+
+  updatePPEButtons();
+  if(camRunning) pushCamTask();
+}
+
+function selectAllPPE(){
+  selectedPPE.clear();
+  selectedPPE.add("all");
+  updatePPEButtons();
+}
+
+function clearAllPPE(){
+  selectedPPE.clear();
+  selectedPPE.add("all");
+  updatePPEButtons();
+}
+
+function updatePPEButtons(){
+  document.querySelectorAll(".pbtn").forEach(b=>{
+    const active = selectedPPE.has(b.dataset.ppe);
+    b.classList.toggle("active", active);
+  });
+  const label = selectedPPE.has("all") ? "ALL" : [...selectedPPE].join(" + ").toUpperCase();
+  document.getElementById("ppe-selected-label").textContent = "Selected: " + label;
+}
+
+function getSelectedPPEString(){
+  return [...selectedPPE].join(",");
+}
+
+// ── Mode ───────────────────────────────────────
+function setMode(mode, tab){
+  activeMode = mode;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  tab.classList.add("active");
+  document.querySelectorAll(".mode-panel").forEach(p=>p.classList.remove("show"));
+  document.getElementById("mp-"+mode).classList.add("show");
+  if(mode!=="webcam" && camRunning) camStop();
+}
+
+// ── File input ─────────────────────────────────
+function onFile(inp, type){
+  const f = inp.files[0];
+  if(!f) return;
+  if(type==="photo"){
+    photoFile=f;
+    document.getElementById("fn-photo").textContent=f.name;
+    document.getElementById("btn-photo").disabled=false;
+  } else {
+    videoFile=f;
+    document.getElementById("fn-video").textContent=f.name;
+    document.getElementById("btn-video").disabled=false;
+  }
+}
+
+// ── Photo ──────────────────────────────────────
+async function runPhoto(){
+  if(!photoFile) return;
+  showSpinner(); setStatus("proc","PROCESSING");
+  const fd=new FormData();
+  fd.append("file",photoFile);
+  fd.append("task",activeTask);
+  fd.append("selected_ppe",getSelectedPPEString());
+  try{
+    const r=await fetch("/api/photo",{method:"POST",body:fd});
+    const data=await r.json();
+    if(data.error){showError(data.error);return;}
+    hideAll();
+    const el=document.getElementById("img-photo");
+    el.src="data:image/jpeg;base64,"+data.image;
+    el.style.display="block";
+    renderChips(data.results);
+    setStatus("","DONE");
+  }catch(e){showError(e.message);}
+}
+
+// ── Video ──────────────────────────────────────
+function runVideo(){
+  if(!videoFile) return;
+  setStatus("proc","STREAMING");
+  const fd=new FormData();
+  fd.append("file",videoFile);
+  fd.append("task",activeTask);
+  fd.append("selected_ppe",getSelectedPPEString());
+  hideAll();
+  const el=document.getElementById("img-video");
+  el.style.display="block";
+  fetch("/api/video",{method:"POST",body:fd}).then(res=>{
+    const reader=res.body.getReader();
+    let buf=new Uint8Array(0);
+    function pump(){
+      reader.read().then(({done,value})=>{
+        if(done){setStatus("","DONE");return;}
+        const tmp=new Uint8Array(buf.length+value.length);
+        tmp.set(buf);tmp.set(value,buf.length);buf=tmp;
+        const s=findSeq(buf,[0xFF,0xD8]);
+        const e=findSeq(buf,[0xFF,0xD9]);
+        if(s!==-1&&e!==-1&&e>s){
+          const jpg=buf.slice(s,e+2);
+          el.src=URL.createObjectURL(new Blob([jpg],{type:"image/jpeg"}));
+          buf=buf.slice(e+2);
+        }
+        pump();
+      });
+    }
+    pump();
+  }).catch(e=>showError(e.message));
+}
+
+function findSeq(arr,seq){
+  outer:for(let i=0;i<=arr.length-seq.length;i++){
+    for(let j=0;j<seq.length;j++) if(arr[i+j]!==seq[j]) continue outer;
+    return i;
+  }return -1;
+}
+
+// ── Webcam ─────────────────────────────────────
+async function camStart(){
+  setStatus("proc","STARTING...");
+  const r=await fetch("/api/webcam/start",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({task:activeTask, selected_ppe:[...selectedPPE]})
+  });
+  const d=await r.json();
+  if(d.error){showError(d.error);return;}
+  camRunning=true;
+  hideAll();
+  document.getElementById("placeholder").style.display="none";
+  document.getElementById("spinner").style.display="none";
+  const el=document.getElementById("img-webcam");
+  el.style.display="block";
+  el.src="/api/webcam/stream?_="+Date.now();
+  el.onerror=()=>{
+    setStatus("","CAM ERROR");
+    el.style.display="none";
+    document.getElementById("placeholder").style.display="block";
+  };
+  setStatus("live","WEBCAM LIVE");
+}
+
+async function camStop(){
+  await fetch("/api/webcam/stop",{method:"POST"});
+  camRunning=false;
+  document.getElementById("img-webcam").style.display="none";
+  setStatus("","STOPPED");
+}
+
+async function pushCamTask(){
+  await fetch("/api/webcam/task",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({task:activeTask, selected_ppe:[...selectedPPE]})
+  });
+}
+
+// ── UI helpers ─────────────────────────────────
+function hideAll(){
+  ["placeholder","spinner","img-photo","img-video","img-webcam"]
+    .forEach(id=>document.getElementById(id).style.display="none");
+}
+function showSpinner(){
+  hideAll();
+  document.getElementById("spinner").style.display="flex";
+}
+function showError(msg){
+  hideAll();
+  document.getElementById("placeholder").style.display="block";
+  document.getElementById("chips").innerHTML=`<span class="chip bad">⚠ ${msg}</span>`;
+  setStatus("","ERROR");
+}
+function setStatus(state,text){
+  document.getElementById("stext").textContent=text;
+  const dot=document.getElementById("sdot");
+  dot.className="sdot"+(state?" "+state:"");
+}
+function renderChips(results){
+  const el=document.getElementById("chips");
+  el.innerHTML="";
+  if(!results){return;}
+  const add=(txt,cls)=>{
+    const c=document.createElement("span");
+    c.className="chip "+cls;c.textContent=txt;el.appendChild(c);
+  };
+  if(Array.isArray(results)){
+    if(!results.length){add("No detections","info");return;}
+    results.forEach(r=>{
+      if(r.id!==undefined){
+        add(`Person ID:${r.id} ${(r.confidence*100).toFixed(0)}%`,"ok");
+      } else {
+        const pct=(r.confidence*100).toFixed(0)+"%";
+        add((r.class||"det")+" "+pct, r.violation?"bad":"ok");
+      }
+    });
+  } else if(typeof results==="object"){
+    if(results.error){add("Error: "+results.error,"bad");return;}
+    if(results.tampered!==undefined) add("Tampered: "+results.tampered,results.tampered?"bad":"ok");
+    if(results.breach!==undefined)   add("Breach: "+results.breach,results.breach?"bad":"ok");
+    if(results.persons!==undefined)  add("Persons: "+results.persons,"info");
+    if(results.reasons&&results.reasons.length) results.reasons.forEach(r=>add(r,"bad"));
+  }
+}
+
+
+// ── Zone Drawing ───────────────────────────────
+let zonePoints    = [];
+let zoneConfirmed = false;
+let drawingZone   = false;
+
+function setTask(btn){
+  activeTask = btn.dataset.task;
+  document.querySelectorAll(".tbtn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("tbar-name").textContent = btn.textContent.trim();
+  // Show/hide zone toolbar
+  const tb = document.getElementById("zone-toolbar");
+  if(tb){
+    if(activeTask === "tripwire"){
+      tb.style.display = "flex";
+      drawingZone = true;
+    } else {
+      tb.style.display = "none";
+      drawingZone = false;
+    }
+  }
+  if(camRunning) pushCamTask();
+}
+
+// Listen for clicks on the display area to draw zone
+document.addEventListener("DOMContentLoaded", ()=>{
+  const da = document.getElementById("display-area");
+  if(!da) return;
+  da.addEventListener("click", (e)=>{
+    if(activeTask !== "tripwire" || !drawingZone) return;
+
+    // Find currently visible image
+    let img = null;
+    for(const id of ["img-photo","img-video","img-webcam"]){
+      const el = document.getElementById(id);
+      if(el && el.style.display !== "none" && el.src && el.src !== window.location.href){
+        img = el; break;
+      }
+    }
+    if(!img){
+      document.getElementById("zone-pts-label").textContent = "⚠ Load video/image first!";
+      return;
+    }
+
+    const rect = img.getBoundingClientRect();
+    // Check if click is within image bounds
+    if(e.clientX < rect.left || e.clientX > rect.right ||
+       e.clientY < rect.top  || e.clientY > rect.bottom) return;
+
+    const xPct = (e.clientX - rect.left) / rect.width;
+    const yPct = (e.clientY - rect.top)  / rect.height;
+    zonePoints.push({x: +xPct.toFixed(4), y: +yPct.toFixed(4)});
+    document.getElementById("zone-pts-label").textContent = "Points: " + zonePoints.length;
+    drawCanvas(rect);
+    e.stopPropagation();
+  });
+});
+
+function drawCanvas(rect){
+  let cv = document.getElementById("zone-cv");
+  if(!cv){
+    cv = document.createElement("canvas");
+    cv.id = "zone-cv";
+    cv.style.cssText = "position:fixed;top:0;left:0;pointer-events:none;z-index:9999;";
+    cv.width  = window.innerWidth;
+    cv.height = window.innerHeight;
+    document.body.appendChild(cv);
+  }
+  const ctx = cv.getContext("2d");
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(zonePoints.length === 0) return;
+
+  const pts = zonePoints.map(p => [rect.left + p.x*rect.width,
+                                    rect.top  + p.y*rect.height]);
+  // Fill
+  if(pts.length >= 3){
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    pts.forEach(p => ctx.lineTo(p[0],p[1]));
+    ctx.closePath();
+    ctx.fillStyle = "rgba(0,212,255,0.20)";
+    ctx.fill();
+  }
+  // Border
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  pts.forEach(p => ctx.lineTo(p[0],p[1]));
+  if(pts.length>=3) ctx.closePath();
+  ctx.strokeStyle = "#00d4ff";
+  ctx.lineWidth   = 2;
+  ctx.setLineDash([6,3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Dots + numbers
+  pts.forEach((p,i)=>{
+    ctx.beginPath();
+    ctx.arc(p[0],p[1],7,0,Math.PI*2);
+    ctx.fillStyle = "#f0c040";
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 11px monospace";
+    ctx.fillText(i+1, p[0]-4, p[1]+4);
+  });
+}
+
+async function confirmZone(){
+  if(zonePoints.length < 3){
+    alert("Add at least 3 points!");
+    return;
+  }
+  const r = await fetch("/api/tripwire/zone",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({points: zonePoints})
+  });
+  const d = await r.json();
+  if(d.ok){
+    zoneConfirmed = true;
+    drawingZone   = false;
+    document.getElementById("zone-pts-label").textContent =
+      "✓ Zone confirmed (" + zonePoints.length + " pts) — Run detection!";
+    if(camRunning) pushCamTask();
+  }
+}
+
+function clearZone(){
+  zonePoints    = [];
+  zoneConfirmed = false;
+  drawingZone   = true;
+  document.getElementById("zone-pts-label").textContent = "Points: 0";
+  const cv = document.getElementById("zone-cv");
+  if(cv) cv.getContext("2d").clearRect(0,0,cv.width,cv.height);
+  fetch("/api/tripwire/zone",{method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({points:[]})});
+}
+
+</script>
+</body>

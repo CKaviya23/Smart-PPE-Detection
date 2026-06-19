@@ -1,0 +1,92 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+*.egg-info/
+pip-wheel-metadata/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+virtual/
+dataset/virtual/
+
+# VS Code and IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+*.zip
+# Test / coverage
+.coverage
+.coverage.*
+.pytest_cache/
+nosetests.xml
+junit.xml
+dataset/
+# Jupyter
+.ipynb_checkpoints/
+
+# Python tooling caches
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# Environment / sensitive files
+.env
+.env.*
+*.env
+
+# Model weights and large artifacts
+*.pt
+weights/
+ppe_yolov8s_run/weights/
+
+# Training / inference outputs
+runs/
+ppe_yolov8s_run/
+
+# Dataset artifacts
+dataset/runs/
+dataset/*.pt
+
+# Static uploads
+static/uploads/
+
+# Test fixtures and outputs
+tests/test_images/
+tests/test_summary.csv
+tests/junit.xml
+
+# Misc
+*.egg
+*.whl
+*.bak
+*.swp

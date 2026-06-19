@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PPE Analytics Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0e1a;--card:#111827;--border:#1e2d45;
+    --cyan:#00d4ff;--yellow:#f0c040;--green:#00e676;
+    --red:#ff4444;--purple:#a855f7;--orange:#f97316;
+    --text:#e2e8f0;--muted:#64748b;--font:'Barlow Condensed',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+
+  /* ── Header ── */
+  .header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 24px;background:var(--card);border-bottom:2px solid var(--yellow);
+    position:sticky;top:0;z-index:100;
+  }
+  .header-left{display:flex;align-items:center;gap:12px}
+  .logo{font-size:22px;font-weight:800;letter-spacing:2px}
+  .logo span{color:var(--yellow)}
+  .nav-btn{
+    padding:8px 20px;border-radius:6px;border:1px solid var(--border);
+    background:transparent;color:var(--cyan);font-family:var(--font);
+    font-size:13px;font-weight:600;cursor:pointer;letter-spacing:1px;
+    transition:all .2s;text-decoration:none;display:inline-block;
+  }
+  .nav-btn:hover{background:var(--cyan);color:#000}
+
+  /* ── Summary Cards ── */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;padding:24px}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:20px 16px;text-align:center;
+  }
+  .card-val{font-size:36px;font-weight:800;line-height:1}
+  .card-lbl{font-size:12px;color:var(--muted);letter-spacing:1px;margin-top:6px;text-transform:uppercase}
+  .card.green .card-val{color:var(--green)}
+  .card.red   .card-val{color:var(--red)}
+  .card.cyan  .card-val{color:var(--cyan)}
+  .card.yellow.card-val{color:var(--yellow)}
+  .card.purple.card-val{color:var(--purple)}
+  .card.orange.card-val{color:var(--orange)}
+
+  /* ── Section ── */
+  .section{padding:0 24px 24px}
+  .section-title{
+    font-size:14px;font-weight:700;letter-spacing:2px;color:var(--cyan);
+    text-transform:uppercase;margin-bottom:16px;padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+  .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:20px}
+  .chart-card{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:20px;
+  }
+  .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .chart-title{font-size:14px;font-weight:700;letter-spacing:1px}
+  .chart-canvas{width:100%!important;max-height:280px}
+
+  /* ── Filter Bar ── */
+  .filter-bar{
+    display:flex;gap:10px;align-items:center;padding:0 24px 16px;flex-wrap:wrap;
+  }
+  .filter-lbl{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .filter-btn{
+    padding:6px 16px;border-radius:20px;border:1px solid var(--border);
+    background:transparent;color:var(--text);font-family:var(--font);
+    font-size:12px;cursor:pointer;transition:all .2s;
+  }
+  .filter-btn.active{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:700}
+  .filter-btn:hover:not(.active){border-color:var(--cyan);color:var(--cyan)}
+
+  /* ── Recent Sessions Table ── */
+  .table-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th{background:#0d1520;padding:12px 16px;text-align:left;font-size:12px;
+     color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  td{padding:10px 16px;border-top:1px solid var(--border);font-size:13px}
+  tr:hover td{background:#131f30}
+  .badge{
+    display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  }
+  .badge.person{background:#1a2a1a;color:var(--green)}
+  .badge.ppe{background:#1a1a2a;color:var(--cyan)}
+  .badge.tripwire{background:#2a1a1a;color:var(--red)}
+  .badge.tamper{background:#2a1a2a;color:var(--purple)}
+
+  /* ── Refresh ── */
+  .refresh-btn{
+    padding:6px 16px;border-radius:6px;border:1px solid var(--cyan);
+    background:transparent;color:var(--cyan);font-family:var(--font);
+    font-size:12px;cursor:pointer;letter-spacing:1px;
+  }
+  .refresh-btn:hover{background:var(--cyan);color:#000}
+  .last-updated{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">⚠ SAFETY <span>PPE</span> ANALYTICS</div>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <span class="last-updated" id="lastUpdated">Loading...</span>
+    <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+    <a href="/" class="nav-btn">← Detection</a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary" id="summaryCards">
+  <div class="card cyan"><div class="card-val" id="s-sessions">—</div><div class="card-lbl">Total Sessions</div></div>
+  <div class="card green"><div class="card-val" id="s-persons">—</div><div class="card-lbl">Persons Detected</div></div>
+  <div class="card cyan"><div class="card-val" id="s-ppe">—</div><div class="card-lbl">PPE Detections</div></div>
+  <div class="card red"><div class="card-val" id="s-violations">—</div><div class="card-lbl">Violations</div></div>
+  <div class="card green"><div class="card-val" id="s-compliance">—%</div><div class="card-lbl">Compliance Rate</div></div>
+  <div class="card red"><div class="card-val" id="s-breaches">—</div><div class="card-lbl">Zone Breaches</div></div>
+  <div class="card purple"><div class="card-val" id="s-tamper">—</div><div class="card-lbl">Tamper Alerts</div></div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <span class="filter-lbl">Filter by Task:</span>
+  <button class="filter-btn active" data-task="all"    onclick="setTaskFilter('all',this)">All Tasks</button>
+  <button class="filter-btn"        data-task="ppe"    onclick="setTaskFilter('ppe',this)">PPE Detection</button>
+  <button class="filter-btn"        data-task="person" onclick="setTaskFilter('person',this)">Person+ID</button>
+  <button class="filter-btn"        data-task="tripwire" onclick="setTaskFilter('tripwire',this)">Tripwire</button>
+  <button class="filter-btn"        data-task="tamper" onclick="setTaskFilter('tamper',this)">Cam Tamper</button>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="section">
+  <div class="section-title">PPE Compliance Overview</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">PPE Class Detection Count</span>
+      </div>
+      <canvas id="chartPPEClasses" class="chart-canvas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Violations vs Compliant per Class</span>
+      </div>
+      <canvas id="chartViolationsOK" class="chart-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="section">
+  <div class="section-title">Detection Trends Over Time</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Detections Over Time (Hourly)</span>
+      </div>
+      <canvas id="chartOverTime" class="chart-canvas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">PPE Compliance Rate (Daily %)</span>
+      </div>
+      <canvas id="chartCompliance" class="chart-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 3 -->
+<div class="section">
+  <div class="section-title">Security Monitoring</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Sessions by Task</span>
+      </div>
+      <canvas id="chartSessionsByTask" class="chart-canvas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Zone Breach Timeline (Daily)</span>
+      </div>
+      <canvas id="chartBreaches" class="chart-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 4 -->
+<div class="section">
+  <div class="section-title">Camera Tampering Analysis</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Tamper Reason Breakdown</span>
+      </div>
+      <canvas id="chartTamperReasons" class="chart-canvas"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Violation Rate by PPE Type (%)</span>
+      </div>
+      <canvas id="chartViolationRate" class="chart-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Sessions -->
+<div class="section">
+  <div class="section-title">Recent Detection Sessions</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Timestamp</th><th>Task</th><th>Source</th>
+        </tr>
+      </thead>
+      <tbody id="sessionsTable">
+        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div style="height:40px"></div>
+
+<script>
+// ── Chart defaults ──────────────────────────────────────────
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#1e2d45';
+Chart.defaults.font.family = "'Barlow Condensed', sans-serif";
+Chart.defaults.font.size = 13;
+
+const COLORS = {
+  cyan:'#00d4ff', green:'#00e676', red:'#ff4444',
+  yellow:'#f0c040', purple:'#a855f7', orange:'#f97316',
+  teal:'#14b8a6', pink:'#ec4899', blue:'#3b82f6'
+};
+const COLOR_LIST = Object.values(COLORS);
+
+let charts = {};
+let currentTask = 'all';
+
+function mkChart(id, type, data, options={}) {
+  if(charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, { type, data,
+    options: {
+      responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{ labels:{ color:'#94a3b8', boxWidth:12 }}},
+      ...options
+    }
+  });
+}
+
+// ── Summary ─────────────────────────────────────────────────
+async function loadSummary() {
+  const r = await fetch('/api/analytics/summary');
+  const d = await r.json();
+  document.getElementById('s-sessions').textContent   = d.total_sessions;
+  document.getElementById('s-persons').textContent    = d.total_persons;
+  document.getElementById('s-ppe').textContent        = d.total_ppe;
+  document.getElementById('s-violations').textContent = d.violations;
+  document.getElementById('s-compliance').textContent = d.compliance_rate + '%';
+  document.getElementById('s-breaches').textContent   = d.breaches;
+  document.getElementById('s-tamper').textContent     = d.tamper_alerts;
+}
+
+// ── PPE Class Bar Chart ──────────────────────────────────────
+async function loadPPEClasses(task='all') {
+  const r = await fetch(`/api/analytics/ppe_class_counts?task=${task}`);
+  const d = await r.json();
+  if(!d.length) return;
+  mkChart('chartPPEClasses','bar',{
+    labels: d.map(x=>x.class),
+    datasets:[{
+      label:'Total Detections',
+      data: d.map(x=>x.count),
+      backgroundColor: d.map((_,i)=>COLOR_LIST[i%COLOR_LIST.length]+'cc'),
+      borderColor:     d.map((_,i)=>COLOR_LIST[i%COLOR_LIST.length]),
+      borderWidth:1, borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}}
+    }
+  });
+}
+
+// ── Violations vs OK Stacked Bar ────────────────────────────
+async function loadViolationsOK() {
+  const r = await fetch('/api/analytics/violations_vs_ok');
+  const d = await r.json();
+  if(!d.length) return;
+  mkChart('chartViolationsOK','bar',{
+    labels: d.map(x=>x.class),
+    datasets:[
+      { label:'Compliant', data:d.map(x=>x.ok),        backgroundColor:COLORS.green+'99', borderRadius:4 },
+      { label:'Violation', data:d.map(x=>x.violation),  backgroundColor:COLORS.red+'99',   borderRadius:4 }
+    ]
+  },{
+    scales:{
+      x:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}},
+      y:{stacked:true,ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}}
+    }
+  });
+}
+
+// ── Detections Over Time Line Chart ─────────────────────────
+async function loadOverTime(task='ppe') {
+  const r = await fetch(`/api/analytics/detections_over_time?task=${task}`);
+  const d = await r.json();
+  if(!d.length) return;
+  const datasets = task==='ppe' ? [
+    { label:'Total PPE', data:d.map(x=>x.cnt), borderColor:COLORS.cyan, backgroundColor:COLORS.cyan+'22', fill:true, tension:0.4 },
+    { label:'Violations', data:d.map(x=>x.violations||0), borderColor:COLORS.red, backgroundColor:COLORS.red+'22', fill:true, tension:0.4 }
+  ] : [
+    { label:'Count', data:d.map(x=>x.cnt), borderColor:COLORS.cyan, backgroundColor:COLORS.cyan+'22', fill:true, tension:0.4 }
+  ];
+  mkChart('chartOverTime','line',{
+    labels: d.map(x=>x.hr),
+    datasets
+  },{
+    scales:{
+      x:{ticks:{color:'#94a3b8',maxTicksLimit:8},grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}}
+    }
+  });
+}
+
+// ── Compliance Rate Line Chart ───────────────────────────────
+async function loadCompliance() {
+  const r = await fetch('/api/analytics/compliance_trend');
+  const d = await r.json();
+  if(!d.length) return;
+  mkChart('chartCompliance','line',{
+    labels: d.map(x=>x.day),
+    datasets:[{
+      label:'Compliance %',
+      data: d.map(x=>x.compliance_rate),
+      borderColor:COLORS.green, backgroundColor:COLORS.green+'22',
+      fill:true, tension:0.4, pointRadius:4
+    }]
+  },{
+    scales:{
+      x:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'},min:0,max:100,
+         ticks:{callback:v=>v+'%'}}
+    }
+  });
+}
+
+// ── Sessions by Task Pie Chart ───────────────────────────────
+async function loadSessionsByTask() {
+  const r = await fetch('/api/analytics/sessions_by_task');
+  const d = await r.json();
+  if(!d.length) return;
+  const colMap={ppe:COLORS.cyan,person:COLORS.green,tripwire:COLORS.red,tamper:COLORS.purple};
+  mkChart('chartSessionsByTask','doughnut',{
+    labels: d.map(x=>x.task.toUpperCase()),
+    datasets:[{
+      data: d.map(x=>x.count),
+      backgroundColor: d.map(x=>colMap[x.task]||COLORS.orange),
+      borderColor: '#111827', borderWidth:3
+    }]
+  },{
+    cutout:'60%',
+    plugins:{ legend:{ position:'right' }}
+  });
+}
+
+// ── Breach Timeline Bar ──────────────────────────────────────
+async function loadBreaches() {
+  const r = await fetch('/api/analytics/breach_timeline');
+  const d = await r.json();
+  if(!d.length) return;
+  mkChart('chartBreaches','bar',{
+    labels: d.map(x=>x.day),
+    datasets:[{
+      label:'Breaches',
+      data: d.map(x=>x.breaches),
+      backgroundColor:COLORS.red+'99', borderColor:COLORS.red, borderWidth:1, borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}}
+    }
+  });
+}
+
+// ── Tamper Reasons Pie ───────────────────────────────────────
+async function loadTamperReasons() {
+  const r = await fetch('/api/analytics/tamper_reasons');
+  const d = await r.json();
+  if(!d.length) return;
+  mkChart('chartTamperReasons','pie',{
+    labels: d.map(x=>x.reason),
+    datasets:[{
+      data: d.map(x=>x.count),
+      backgroundColor:[COLORS.purple,COLORS.orange,COLORS.red,COLORS.yellow],
+      borderColor:'#111827', borderWidth:3
+    }]
+  },{plugins:{legend:{position:'right'}}});
+}
+
+// ── Violation Rate Bar ───────────────────────────────────────
+async function loadViolationRate() {
+  const r = await fetch('/api/analytics/violations_vs_ok');
+  const d = await r.json();
+  if(!d.length) return;
+  const rates = d.map(x=>({
+    class: x.class,
+    rate: x.ok+x.violation>0 ? Math.round(x.violation/(x.ok+x.violation)*100) : 0
+  }));
+  mkChart('chartViolationRate','bar',{
+    labels: rates.map(x=>x.class),
+    datasets:[{
+      label:'Violation Rate %',
+      data: rates.map(x=>x.rate),
+      backgroundColor: rates.map(x=>x.rate>50?COLORS.red+'cc':x.rate>20?COLORS.orange+'cc':COLORS.green+'cc'),
+      borderRadius:4
+    }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#94a3b8'},grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'#1e2d45'},max:100}
+    }
+  });
+}
+
+// ── Recent Sessions Table ────────────────────────────────────
+async function loadRecentSessions() {
+  const r = await fetch('/api/analytics/recent_sessions');
+  const d = await r.json();
+  const tb = document.getElementById('sessionsTable');
+  if(!d.length){
+    tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">No sessions recorded yet</td></tr>';
+    return;
+  }
+  tb.innerHTML = d.map(s=>`
+    <tr>
+      <td style="color:var(--muted)">#${s.id}</td>
+      <td>${new Date(s.timestamp).toLocaleString()}</td>
+      <td><span class="badge ${s.task}">${s.task.toUpperCase()}</span></td>
+      <td style="color:var(--muted)">${s.source}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Task Filter ──────────────────────────────────────────────
+function setTaskFilter(task, btn) {
+  currentTask = task;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadPPEClasses(task);
+  loadOverTime(task==='all'?'ppe':task);
+}
+
+// ── Load All ─────────────────────────────────────────────────
+async function loadAll() {
+  document.getElementById('lastUpdated').textContent = 'Updating...';
+  await Promise.all([
+    loadSummary(),
+    loadPPEClasses(currentTask),
+    loadViolationsOK(),
+    loadOverTime('ppe'),
+    loadCompliance(),
+    loadSessionsByTask(),
+    loadBreaches(),
+    loadTamperReasons(),
+    loadViolationRate(),
+    loadRecentSessions()
+  ]);
+  document.getElementById('lastUpdated').textContent =
+    'Updated: ' + new Date().toLocaleTimeString();
+}
+
+// Init
+loadAll();
+// Auto-refresh every 30 seconds
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
