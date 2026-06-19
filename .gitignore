@@ -51,7 +51,6 @@ Thumbs.db
 nosetests.xml
 junit.xml
 dataset/
-# Jupyter
 .ipynb_checkpoints/
 
 # Python tooling caches
